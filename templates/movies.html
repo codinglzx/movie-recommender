@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}电影列表{% endblock %}
+{% block content %}
+<div class="hero" style="padding: 40px 50px;">
+    <div class="hero-content">
+        <h1>电影库</h1>
+        <p>浏览所有电影，发现你喜欢的作品。点击卡片查看详情。</p>
+    </div>
+</div>
+
+<div class="search-filter-bar">
+    <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="movieSearch" placeholder="搜索电影、类型或简介...">
+    </div>
+    <div class="filter-group">
+        <label>类型</label>
+        <div class="genre-filters" id="genreFilters">
+            <button class="genre-filter-btn" data-genre="科幻">科幻</button>
+            <button class="genre-filter-btn" data-genre="动作">动作</button>
+            <button class="genre-filter-btn" data-genre="动画">动画</button>
+            <button class="genre-filter-btn" data-genre="剧情">剧情</button>
+            <button class="genre-filter-btn" data-genre="喜剧">喜剧</button>
+            <button class="genre-filter-btn" data-genre="悬疑">悬疑</button>
+            <button class="genre-filter-btn" data-genre="惊悚">惊悚</button>
+            <button class="genre-filter-btn" data-genre="冒险">冒险</button>
+            <button class="genre-filter-btn" data-genre="奇幻">奇幻</button>
+            <button class="genre-filter-btn" data-genre="爱情">爱情</button>
+            <button class="genre-filter-btn" data-genre="犯罪">犯罪</button>
+        </div>
+    </div>
+    <div class="filter-group">
+        <label>年份</label>
+        <select name="year" id="yearFilter">
+            <option value="">全部年份</option>
+            {% for year in years %}
+            <option value="{{ year }}">{{ year }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+{% if movies %}
+<div class="movie-grid" id="movieGrid">
+    {% for movie in movies %}
+    <div class="movie-card" data-movie-id="{{ movie.movie_id }}">
+        <div class="movie-poster" style="background-image: url('{{ url_for('serve_poster', filename=movie.movie_id ~ '.jpg') }}')" onerror="this.style.backgroundImage='none'; this.classList.add('movie-poster-placeholder'); this.dataset.genre='{{ movie.genres[0] if movie.genres else '其他' }}'; this.innerHTML='<span>{{ movie.title[0] }}</span><div class=\'movie-poster-overlay\'><div class=\'movie-rating-badge\'>⭐ {{ movie.vote_average or 'N/A' }}</div></div>'">
+            <div class="movie-poster-overlay">
+                <div class="movie-rating-badge">⭐ {{ movie.vote_average }}</div>
+                <div class="movie-genre-tags">
+                    {% for genre in movie.genres[:2] %}
+                    <span class="movie-genre-tag">{{ genre }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <h3>{{ movie.title }}</h3>
+        <div class="movie-meta">{{ movie.release_year }}</div>
+        <div class="movie-meta">{{ movie.genre_text() }}</div>
+        <div style="margin-top: 10px;">
+            <span class="rating">⭐ {{ movie.vote_average if movie.vote_average else 'N/A' }}</span>
+        </div>
+        <div class="rating-desc">
+            {% if movie.overview %}
+                {% if movie.overview|length > 100 %}{{ movie.overview[:100] }}...{% else %}{{ movie.overview }}{% endif %}
+            {% else %}暂无简介{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="icon">🎥</div>
+    <p>暂无电影，请先 <a href="{{ url_for('init_route') }}">初始化数据</a>。</p>
+</div>
+{% endif %}
+</div>
+
+<script>
+window.__MOVIES_DATA__ = [
+    {% for movie in movies %}
+    {
+        movie_id: {{ movie.movie_id }},
+        title: {{ movie.title|tojson }},
+        overview: {{ movie.overview|tojson }},
+        release_year: {{ movie.release_year or 'null' }},
+        genres: {{ movie.genres|tojson }},
+        vote_average: {{ movie.vote_average or 'null' }},
+        popularity: {{ movie.popularity or 'null' }},
+        poster_path: {{ url_for('serve_poster', filename=movie.movie_id ~ '.jpg')|tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+window.__CURRENT_USER_ID__ = {{ session.get('user_id', 'null') }};
+window.__USER_RATINGS__ = {{ user_ratings | tojson }};
+</script>
+{% endblock %}

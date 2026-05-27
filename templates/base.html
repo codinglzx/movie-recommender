@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}电影推荐系统{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var loginRequiredLinks = document.querySelectorAll('.nav-link[href="#"], .mobile-nav-link[href="#"]');
+    loginRequiredLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('请先登录');
+        });
+    });
+});
+</script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <span class="nav-brand">
+                <span class="brand-icon">🎬</span>
+                <span class="brand-text">电影推荐</span>
+            </span>
+
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+                    🏠 首页
+                </a>
+                <a href="{{ url_for('movies') }}" class="nav-link {% if request.endpoint == 'movies' %}active{% endif %}">
+                    🔍 探索电影
+                </a>
+                <a href="{{ url_for('recommend', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="nav-link {% if request.endpoint == 'recommend' %}active{% endif %}">
+                    🎯 我的推荐
+                </a>
+                <a href="{{ url_for('charts', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="nav-link {% if request.endpoint == 'charts' %}active{% endif %}">
+                    📊 我的图表
+                </a>
+            </div>
+
+            <div class="nav-right">
+                {% if session.get('user_id') %}
+                <div class="user-menu" id="userMenu">
+                    <button class="user-menu-trigger" id="userMenuTrigger">
+                        <span class="user-avatar">{{ user_name[0] if user_name else 'U' }}</span>
+                        <span class="user-name">{{ user_name or '用户' }}</span>
+                        <span class="user-arrow">▼</span>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="dropdown-header">
+                            <span class="dropdown-avatar">{{ user_name[0] if user_name else 'U' }}</span>
+                            <div class="dropdown-user-info">
+                                <span class="dropdown-user-name">{{ user_name or '用户' }}</span>
+                                <span class="dropdown-user-id">ID: {{ session['user_id'] }}</span>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ url_for('logout') }}" class="dropdown-item logout">
+                            <span>🚪</span> 退出登录
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="mobile-nav" id="mobileNav">
+        <a href="{{ url_for('index') }}" class="mobile-nav-link">🏠 首页</a>
+        <a href="{{ url_for('movies') }}" class="mobile-nav-link">🔍 探索电影</a>
+        <a href="{{ url_for('recommend', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="mobile-nav-link">🎯 我的推荐</a>
+        <a href="{{ url_for('charts', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="mobile-nav-link">📊 我的图表</a>
+        {% if session.get('user_id') %}
+        <a href="{{ url_for('logout') }}" class="mobile-nav-link logout">🚪 退出</a>
+        {% endif %}
+    </div>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>电影推荐系统 · 基于协同过滤与类型偏好</p>
+        </div>
+    </footer>
+</body>
+</html>

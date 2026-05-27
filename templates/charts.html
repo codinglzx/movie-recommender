@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}{{ user_name }} 的图表{% endblock %}
+{% block content %}
+<div class="page-content">
+<h1>数据图表 - {{ user_name }}</h1>
+<p class="page-desc">评分分布和类型偏好分析。悬停图表查看详情。</p>
+
+<div class="actions">
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">🏠 返回首页</a>
+</div>
+
+<div class="charts">
+    <div class="chart-card">
+        <h2>用户评分分布</h2>
+        <div class="chart-container">
+            <canvas id="ratingChart"></canvas>
+        </div>
+        <div class="chart-legend" id="ratingLegend"></div>
+    </div>
+    <div class="chart-card">
+        <h2>电影类型分布</h2>
+        <div class="chart-container">
+            <canvas id="genreChart"></canvas>
+        </div>
+        <div class="chart-legend" id="genreLegend"></div>
+    </div>
+</div>
+
+<!-- 备用静态图表（加载失败时显示） -->
+<div class="charts chart-fallback" id="chartFallback" style="display:none;">
+    <div class="chart-card">
+        <h2>用户评分分布</h2>
+        <img src="{{ url_for('static', filename='images/rating_distribution.png') }}" alt="评分分布">
+    </div>
+    <div class="chart-card">
+        <h2>电影类型分布</h2>
+        <img src="{{ url_for('static', filename='images/genre_preference.png') }}" alt="类型分布">
+    </div>
+</div>
+<noscript>
+<style>
+.chart-fallback { display: block !important; }
+</style>
+</noscript>
+</div>
+
+<script>
+// 图表数据
+const chartData = {
+    rating: {
+        labels: {{ rating_labels|tojson }},
+        values: {{ rating_values|tojson }},
+        colors: [
+            'rgba(233, 69, 96, 0.8)',
+            'rgba(255, 107, 107, 0.8)',
+            'rgba(255, 193, 7, 0.8)',
+            'rgba(76, 175, 80, 0.8)',
+            'rgba(0, 212, 255, 0.8)'
+        ]
+    },
+    genre: {
+        labels: {{ genre_labels|tojson }},
+        values: {{ genre_values|tojson }},
+        colors: [
+            'rgba(233, 69, 96, 0.8)',
+            'rgba(124, 77, 255, 0.8)',
+            'rgba(255, 82, 82, 0.8)',
+            'rgba(233, 30, 99, 0.8)',
+            'rgba(33, 150, 243, 0.8)',
+            'rgba(255, 152, 0, 0.8)',
+            'rgba(103, 58, 183, 0.8)',
+            'rgba(0, 188, 212, 0.8)',
+            'rgba(76, 175, 80, 0.8)',
+            'rgba(156, 39, 176, 0.8)',
+            'rgba(96, 125, 139, 0.8)'
+        ]
+    }
+};
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // 等待 Chart.js 加载，带超时
+    if (!window.Chart) {
+        const script = document.createElement('script');
+        const loadTimeout = setTimeout(() => {
+            console.warn('Chart.js 加载超时，显示备用图片');
+            document.querySelectorAll('.chart-card canvas').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.chart-fallback').forEach(el => el.style.display = 'block');
+        }, 5000);
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+        script.onload = () => {
+            clearTimeout(loadTimeout);
+            document.getElementById('chartFallback').style.display = 'none';
+            initCharts();
+        };
+        script.onerror = () => {
+            clearTimeout(loadTimeout);
+            document.querySelectorAll('.chart-card canvas').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.chart-fallback').forEach(el => el.style.display = 'block');
+        };
+        document.head.appendChild(script);
+    } else {
+        initCharts();
+    }
+});
+
+function initCharts() {
+    // 评分分布柱状图
+    if (document.getElementById('ratingChart')) {
+        const ratingCtx = document.getElementById('ratingChart').getContext('2d');
+        new Chart(ratingCtx, {
+            type: 'bar',
+            data: {
+                labels: chartData.rating.labels,
+                datasets: [{
+                    label: '评分数',
+                    data: chartData.rating.values,
+                    backgroundColor: chartData.rating.colors,
+                    borderColor: chartData.rating.colors.map(c => c.replace('0.8', '1')),
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(22, 33, 62, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#b0b0b0',
+                        borderColor: 'rgba(233, 69, 96, 0.3)',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.parsed.y} 次评分`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { color: '#888' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#888',
+                            callback: function(value, index) {
+                                const label = this.getLabelForValue(value);
+                                return label + '星';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 类型分布环形图
+    if (document.getElementById('genreChart')) {
+        const genreCtx = document.getElementById('genreChart').getContext('2d');
+        new Chart(genreCtx, {
+            type: 'doughnut',
+            data: {
+                labels: chartData.genre.labels,
+                datasets: [{
+                    data: chartData.genre.values,
+                    backgroundColor: chartData.genre.colors,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '55%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#b0b0b0',
+                            padding: 12,
+                            font: { size: 11 },
+                            usePointStyle: true,
+                            pointStyle: 'rectRounded'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(22, 33, 62, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#b0b0b0',
+                        borderColor: 'rgba(233, 69, 96, 0.3)',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return `${context.label}: ${context.parsed} 部 (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

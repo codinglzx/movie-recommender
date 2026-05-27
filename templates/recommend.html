@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ user_name }} 的推荐{% endblock %}
+{% block content %}
+<div class="welcome-banner">
+    <div class="welcome-text">
+        <h2>欢迎回来，{{ user_name }}！👋</h2>
+        <p>基于你的评分历史和类型偏好，我们为你准备了以下推荐</p>
+    </div>
+    <div class="welcome-stats">
+        <div class="welcome-stat">
+            <span class="welcome-stat-num">{{ genre_recs|length }}</span>
+            <span class="welcome-stat-label">类型推荐</span>
+        </div>
+        <div class="welcome-stat">
+            <span class="welcome-stat-num">{{ cf_recs|length }}</span>
+            <span class="welcome-stat-label">协同推荐</span>
+        </div>
+    </div>
+</div>
+
+<div class="actions">
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">🏠 返回首页</a>
+</div>
+
+{% if genre_recs %}
+<h2>🎯 基于类型偏好</h2>
+<div class="movie-grid">
+    {% for r in genre_recs %}
+    <div class="movie-card" data-movie-id="{{ r.movie.movie_id }}">
+        <div class="movie-poster" style="background-image: url('{{ url_for('serve_poster', filename=r.movie.movie_id ~ '.jpg') }}')" onerror="this.style.backgroundImage='none'; this.classList.add('movie-poster-placeholder'); this.dataset.genre='{{ r.movie.genres[0] if r.movie.genres else '其他' }}'; this.innerHTML='<span>{{ r.movie.title[0] }}</span><div class=\'movie-poster-overlay\'><div class=\'movie-rating-badge\'>⭐ {{ r.movie.vote_average or 'N/A' }}</div></div>'">
+            <div class="movie-poster-overlay">
+                <div class="movie-rating-badge">⭐ {{ r.movie.vote_average }}</div>
+                <div class="movie-genre-tags">
+                    {% for genre in r.movie.genres[:2] %}
+                    <span class="movie-genre-tag">{{ genre }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <h3>{{ r.movie.title }}</h3>
+        <div class="movie-meta">{{ r.movie.release_year }}</div>
+        <div class="movie-meta">{{ r.movie.genre_text() }}</div>
+        <div style="margin-top: 10px;">
+            <span class="score" style="color: #e94560; font-weight: 700;">推荐指数: {{ "%.2f"|format(r.score) }}</span>
+        </div>
+        <div class="rating-desc">{{ r.movie.overview|truncate(50, end='...') }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if cf_recs %}
+<h2>🔮 协同过滤推荐</h2>
+<div class="movie-grid">
+    {% for r in cf_recs %}
+    <div class="movie-card" data-movie-id="{{ r.movie.movie_id }}">
+        <div class="movie-poster" style="background-image: url('{{ url_for('serve_poster', filename=r.movie.movie_id ~ '.jpg') }}')" onerror="this.style.backgroundImage='none'; this.classList.add('movie-poster-placeholder'); this.dataset.genre='{{ r.movie.genres[0] if r.movie.genres else '其他' }}'; this.innerHTML='<span>{{ r.movie.title[0] }}</span><div class=\'movie-poster-overlay\'><div class=\'movie-rating-badge\'>⭐ {{ r.movie.vote_average or 'N/A' }}</div></div>'">
+            <div class="movie-poster-overlay">
+                <div class="movie-rating-badge">⭐ {{ r.movie.vote_average }}</div>
+                <div class="movie-genre-tags">
+                    {% for genre in r.movie.genres[:2] %}
+                    <span class="movie-genre-tag">{{ genre }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <h3>{{ r.movie.title }}</h3>
+        <div class="movie-meta">{{ r.movie.release_year }}</div>
+        <div class="movie-meta">{{ r.movie.genre_text() }}</div>
+        <div style="margin-top: 10px;">
+            <span class="score" style="color: #00d4ff; font-weight: 700;">推荐指数: {{ "%.2f"|format(r.score) }}</span>
+        </div>
+        <div class="rating-desc">{{ r.movie.overview|truncate(50, end='...') }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if not genre_recs and not cf_recs %}
+<div class="empty-state">
+    <div class="icon">📊</div>
+    <p>暂无推荐，请先 <a href="{{ url_for('movies') }}">探索电影</a> 开始你的评分之旅！</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}电影推荐系统 - 首页{% endblock %}
+{% block content %}
+<div class="hero">
+    <div class="hero-content">
+        <h1>发现你的专属电影</h1>
+        <p>基于协同过滤与类型偏好，为你推荐最感兴趣的电影作品。</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('movies') }}" class="btn btn-secondary">🔍 探索电影</a>
+            {% if session.get('user_id') %}
+            <a href="{{ url_for('recommend', user_id=session['user_id']) }}" class="btn btn-secondary">🎯 我的推荐</a>
+            <a href="{{ url_for('charts', user_id=session['user_id']) }}" class="btn btn-secondary">📊 我的图表</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stats-card">
+        <div class="stats-icon">🎬</div>
+        <span class="stats-num">{{ movie_count }}</span>
+        <span class="stats-label">电影收藏</span>
+    </div>
+    <div class="stats-card">
+        <div class="stats-icon">⭐</div>
+        <span class="stats-num">{{ rating_count if rating_count else '—' }}</span>
+        <span class="stats-label">评分记录</span>
+    </div>
+</div>
+
+{% if not session.get('user_id') %}
+<div class="card">
+    <div class="card-title"><span>👋</span> 选择用户登录</div>
+    <div class="user-grid">
+        {% for u in users %}
+        <a href="{{ url_for('login', user_id=u.user_id) }}" class="user-card">
+            <div class="user-card-avatar">{{ u.name[0] }}</div>
+            <div class="user-card-name">{{ u.name }}</div>
+            <div class="user-card-subtitle">点击登录</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title"><span>✨</span> 添加新用户</div>
+    <form method="post" action="{{ url_for('add_user') }}" class="add-user-form">
+        <input type="text" name="name" placeholder="输入用户名" required>
+        <button type="submit" class="btn">添加用户</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
