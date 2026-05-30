@@ -20,16 +20,18 @@ class Toast {
         toast.className = `toast ${type}`;
 
         const icons = {
-            success: '✓',
-            error: '✕',
-            warning: '⚠',
-            info: 'ℹ'
+            success: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"/></svg>',
+            error: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+            warning: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4895a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 22h20L12 2z"/><line x1="12" y1="10" x2="12" y2="15"/><circle cx="12" cy="18.5" r="0.5" fill="#d4895a" stroke="none"/></svg>',
+            info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8a84e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="10.5" x2="12" y2="17"/><circle cx="12" cy="7.5" r="0.5" fill="#c8a84e" stroke="none"/></svg>'
         };
+
+        const closeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
         toast.innerHTML = `
             <span class="toast-icon">${icons[type] || icons.info}</span>
             <span class="toast-message">${message}</span>
-            <button class="toast-close">×</button>
+            <button class="toast-close">${closeIcon}</button>
         `;
 
         this.container.appendChild(toast);
@@ -123,6 +125,7 @@ class StarRating {
 class MovieModal {
     constructor() {
         this.modal = null;
+        this.modalBody = null;
         this.createModal();
     }
 
@@ -149,6 +152,7 @@ class MovieModal {
             </div>
         `;
         document.body.appendChild(this.modal);
+        this.modalBody = this.modal.querySelector('.modal-body');
 
         this.modal.querySelector('.modal-close').addEventListener('click', () => this.close());
         this.modal.addEventListener('click', (e) => {
@@ -167,26 +171,31 @@ class MovieModal {
 
         // 海报
         const posterEl = content.querySelector('.modal-poster');
-        const posterUrl = movie.poster_path || `/posters/${movie.movie_id}.jpg`;
-        posterEl.style.backgroundImage = `url('${posterUrl}')`;
         posterEl.classList.remove('modal-poster-placeholder');
+        posterEl.removeAttribute('data-genre');
         posterEl.innerHTML = '';
-        posterEl.onerror = () => {
+        if (movie.poster_path) {
+            posterEl.style.background = '';
+            posterEl.style.backgroundImage = `url('${movie.poster_path}')`;
+        } else {
             posterEl.style.backgroundImage = 'none';
             posterEl.classList.add('modal-poster-placeholder');
-            posterEl.innerHTML = `<span>${movie.title[0]}</span>`;
+            posterEl.dataset.genre = (movie.genres && movie.genres[0]) || '其他';
+            posterEl.innerHTML = `<span>${escapeHTML((movie.title || '?')[0])}</span>`;
             posterEl.style.background = this.getGenreColor(movie.genres);
-        };
+        }
 
         // 元信息
         const metaItems = [];
-        if (movie.release_year) metaItems.push(`📅 ${movie.release_year}`);
-        if (movie.popularity) metaItems.push(`🔥 ${Math.round(movie.popularity)}`);
+        const clockSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+        const fireSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 22c4.4 0 8-3.6 8-8 0-5-5.5-10-8-14-2.5 4-8 9-8 14 0 4.4 3.6 8 8 8z"/><path d="M12 19c-1.7 0-3-1.3-3-3 0-2 2-4.5 3-6 1 1.5 3 4 3 6 0 1.7-1.3 3-3 3z"/></svg>';
+        if (movie.release_year) metaItems.push(`${clockSvg} ${movie.release_year}`);
+        if (movie.popularity) metaItems.push(`${fireSvg} ${Math.round(movie.popularity)}`);
         content.querySelector('.modal-meta').innerHTML = metaItems.map(m => `<span>${m}</span>`).join('');
 
         // 类型标签
         const genresHtml = (movie.genres || []).map(g =>
-            `<span class="modal-genre-tag">${g}</span>`
+            `<span class="modal-genre-tag">${escapeHTML(g)}</span>`
         ).join('');
         content.querySelector('.modal-genres').innerHTML = genresHtml;
 
@@ -206,15 +215,14 @@ class MovieModal {
         content.querySelector('.modal-overview').textContent = movie.overview || '暂无简介';
 
         // Modal Body - 评分区域
-        const modalBody = content.querySelector('.modal-body');
         if (window.__CURRENT_USER_ID__) {
             const userRating = this.getUserRating(movie.movie_id);
-            modalBody.innerHTML = `
+            this.modalBody.innerHTML = `
                 <h3>我的评分</h3>
                 <div class="modal-rating-form" data-movie-id="${movie.movie_id}">
                     <div class="star-rating-input" style="flex-direction: row; align-items: center; gap: 12px;">
                         <div class="stars">
-                            ${[1,2,3,4,5].map(n => `<span class="star ${n <= userRating ? 'selected' : ''}" data-value="${n}" style="font-size: 28px; color: ${n <= userRating ? '#ffc107' : '#333'}; cursor: pointer;">★</span>`).join('')}
+                            ${[1,2,3,4,5].map(n => `<span class="star ${n <= userRating ? 'selected' : ''}" data-value="${n}" style="font-size: 28px; color: ${n <= userRating ? '#d4a843' : '#2a2a35'}; cursor: pointer;">★</span>`).join('')}
                         </div>
                         <span class="rating-text" style="color: #888; font-size: 13px;">${userRating ? '已评分' : '点击星星评分'}</span>
                     </div>
@@ -222,23 +230,23 @@ class MovieModal {
                 </div>
             `;
             // 绑定评分事件
-            modalBody.querySelectorAll('.star').forEach(star => {
+            this.modalBody.querySelectorAll('.star').forEach(star => {
                 star.addEventListener('click', () => this.handleRating(movie.movie_id, parseInt(star.dataset.value)));
                 star.addEventListener('mouseenter', () => {
                     const val = parseInt(star.dataset.value);
-                    modalBody.querySelectorAll('.star').forEach((s, i) => {
-                        s.style.color = i < val ? '#ffc107' : '#333';
+                    this.modalBody.querySelectorAll('.star').forEach((s, i) => {
+                        s.style.color = i < val ? '#d4a843' : '#2a2a35';
                     });
                 });
                 star.addEventListener('mouseleave', () => {
-                    const current = parseInt(modalBody.querySelector('.hidden-rating-input').value) || userRating;
-                    modalBody.querySelectorAll('.star').forEach((s, i) => {
-                        s.style.color = i < current ? '#ffc107' : '#333';
+                    const current = parseInt(this.modalBody.querySelector('.hidden-rating-input').value) || userRating;
+                    this.modalBody.querySelectorAll('.star').forEach((s, i) => {
+                        s.style.color = i < current ? '#d4a843' : '#2a2a35';
                     });
                 });
             });
         } else {
-            modalBody.innerHTML = '<p style="color: #888; text-align: center; padding: 10px;">登录后可评分</p>';
+            this.modalBody.innerHTML = '<p style="color: #888; text-align: center; padding: 10px;">登录后可评分</p>';
         }
 
         this.modal.classList.add('active');
@@ -269,11 +277,10 @@ class MovieModal {
                 if (!window.__USER_RATINGS__) window.__USER_RATINGS__ = {};
                 window.__USER_RATINGS__[movieId] = rating;
                 // 更新星星显示
-                const modalBody = document.querySelector('.modal-body');
-                modalBody.querySelector('.hidden-rating-input').value = rating;
-                modalBody.querySelector('.rating-text').textContent = '已评分';
-                modalBody.querySelectorAll('.star').forEach((s, i) => {
-                    s.style.color = i < rating ? '#ffc107' : '#333';
+                this.modalBody.querySelector('.hidden-rating-input').value = rating;
+                this.modalBody.querySelector('.rating-text').textContent = '已评分';
+                this.modalBody.querySelectorAll('.star').forEach((s, i) => {
+                    s.style.color = i < rating ? '#d4a843' : '#2a2a35';
                 });
             }
           }).catch(() => {
@@ -287,22 +294,7 @@ class MovieModal {
     }
 
     getGenreColor(genres) {
-        const colors = {
-            '科幻': 'linear-gradient(135deg, #1a237e, #4a148c)',
-            '动作': 'linear-gradient(135deg, #b71c1c, #c62828)',
-            '动画': 'linear-gradient(135deg, #880e4f, #ad1457)',
-            '剧情': 'linear-gradient(135deg, #0d47a1, #1565c0)',
-            '喜剧': 'linear-gradient(135deg, #e65100, #ff6d00)',
-            '悬疑': 'linear-gradient(135deg, #311b92, #512da8)',
-            '惊悚': 'linear-gradient(135deg, #4a148c, #6a1b9a)',
-            '冒险': 'linear-gradient(135deg, #1b5e20, #2e7d32)',
-            '奇幻': 'linear-gradient(135deg, #006064, #00838f)',
-            '爱情': 'linear-gradient(135deg, #ad1457, #c2185b)',
-            '犯罪': 'linear-gradient(135deg, #263238, #37474f)',
-            '其他': 'linear-gradient(135deg, #37474f, #455a64)'
-        };
-        const genre = (genres && genres[0]) || '其他';
-        return colors[genre] || colors['其他'];
+        return getGenreColor(genres);
     }
 }
 
@@ -398,7 +390,7 @@ class MovieSearch {
         if (this.filteredMovies.length === 0) {
             grid.innerHTML = `
                 <div class="no-results">
-                    <div class="icon">🔍</div>
+                    <div class="icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
                     <p>没有找到匹配的电影</p>
                 </div>
             `;
@@ -411,26 +403,31 @@ class MovieSearch {
     }
 
     createMovieCard(movie) {
-        const ratingBadge = movie.vote_average ? `⭐ ${Number(movie.vote_average).toFixed(1)}` : '⭐ N/A';
-        const genreTags = (movie.genres || []).slice(0, 2).map(g => `<span class="movie-genre-tag">${g}</span>`).join('');
-        const fallbackStyle = `background: ${getGenreColor(movie.genres)}`;
-        const onerrorAttr = `onerror="this.style.backgroundImage='none'; this.classList.add('movie-poster-placeholder'); this.style.background='${fallbackStyle}'; this.innerHTML='<span>${movie.title[0]}</span><div class=\\'movie-poster-overlay\\'><div class=\\'movie-rating-badge\\'>${ratingBadge}</div></div>'"`;
+        const starSvg = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="vertical-align:-2px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+        const ratingBadge = movie.vote_average ? `${starSvg} ${Number(movie.vote_average).toFixed(1)}` : `${starSvg} N/A`;
+        const genreTags = (movie.genres || []).slice(0, 2).map(g => `<span class="movie-genre-tag">${escapeHTML(g)}</span>`).join('');
+        const posterClass = movie.poster_path ? 'movie-poster' : 'movie-poster movie-poster-placeholder';
+        const posterAttrs = movie.poster_path
+            ? `style="background-image: url('${escapeHTML(movie.poster_path)}')"`
+            : `data-genre="${escapeHTML((movie.genres && movie.genres[0]) || '其他')}"`;
+        const posterInitial = movie.poster_path ? '' : `<span>${escapeHTML((movie.title || '?')[0])}</span>`;
 
         return `
             <div class="movie-card" data-movie-id="${movie.movie_id}">
-                <div class="movie-poster" style="background-image: url('${movie.poster_path}')" ${onerrorAttr}>
+                <div class="${posterClass}" ${posterAttrs}>
+                    ${posterInitial}
                     <div class="movie-poster-overlay">
                         <div class="movie-rating-badge">${ratingBadge}</div>
                         <div class="movie-genre-tags">${genreTags}</div>
                     </div>
                 </div>
-                <h3>${movie.title}</h3>
+                <h3>${escapeHTML(movie.title)}</h3>
                 <div class="movie-meta">${movie.release_year || '未知年份'}</div>
-                <div class="movie-meta">${(movie.genres || []).join(', ') || '其他'}</div>
+                <div class="movie-meta">${escapeHTML((movie.genres || []).join(', ') || '其他')}</div>
                 <div style="margin-top: 10px;">
                     <span class="rating">${ratingBadge}</span>
                 </div>
-                <div class="rating-desc">${((movie.overview || '').substring(0, 100)).replace(/</g, '&lt;').replace(/>/g, '&gt;')}...</div>
+                <div class="rating-desc">${escapeHTML((movie.overview || '').length > 100 ? (movie.overview || '').substring(0, 100) + '...' : (movie.overview || ''))}</div>
             </div>`;
     }
 
@@ -447,144 +444,34 @@ class MovieSearch {
     }
 }
 
-// ========== 交互式图表 ==========
-class InteractiveChart {
-    constructor(canvasId, type, data, options = {}) {
-        this.canvas = document.getElementById(canvasId);
-        if (!this.canvas) return;
-
-        this.type = type;
-        this.data = data;
-        this.options = options;
-        this.chart = null;
-        this.init();
-    }
-
-    async init() {
-        // 动态加载 Chart.js
-        if (!window.Chart) {
-            await this.loadChartJS();
-        }
-        this.render();
-    }
-
-    loadChartJS() {
-        return new Promise((resolve) => {
-            if (document.querySelector('script[src*="chart.js"]')) {
-                resolve();
-                return;
-            }
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-            script.onload = resolve;
-            document.head.appendChild(script);
-        });
-    }
-
-    render() {
-        const ctx = this.canvas.getContext('2d');
-
-        if (this.chart) {
-            this.chart.destroy();
-        }
-
-        const config = this.getChartConfig();
-        this.chart = new Chart(ctx, config);
-    }
-
-    getChartConfig() {
-        const baseOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: { color: '#b0b0b0', font: { size: 12 } }
-                }
-            }
-        };
-
-        if (this.type === 'bar') {
-            return {
-                type: 'bar',
-                data: {
-                    labels: this.data.labels,
-                    datasets: [{
-                        label: this.data.label,
-                        data: this.data.values,
-                        backgroundColor: this.data.colors || 'rgba(233, 69, 96, 0.6)',
-                        borderColor: this.data.colors || 'rgba(233, 69, 96, 1)',
-                        borderWidth: 1,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    ...baseOptions,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255,255,255,0.1)' },
-                            ticks: { color: '#888' }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#888' }
-                        }
-                    }
-                }
-            };
-        }
-
-        if (this.type === 'doughnut') {
-            return {
-                type: 'doughnut',
-                data: {
-                    labels: this.data.labels,
-                    datasets: [{
-                        data: this.data.values,
-                        backgroundColor: this.data.colors,
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    ...baseOptions,
-                    cutout: '60%',
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { color: '#b0b0b0', padding: 15, font: { size: 11 } }
-                        }
-                    }
-                }
-            };
-        }
-
-        return {};
-    }
-
-    updateData(newData) {
-        this.data = newData;
-        this.render();
-    }
-}
-
 // ========== 工具函数 ==========
 function getGenreColor(genres) {
     const colors = {
-        '科幻': 'linear-gradient(135deg, #1a237e, #4a148c)',
-        '动作': 'linear-gradient(135deg, #b71c1c, #c62828)',
-        '动画': 'linear-gradient(135deg, #880e4f, #ad1457)',
-        '剧情': 'linear-gradient(135deg, #0d47a1, #1565c0)',
-        '喜剧': 'linear-gradient(135deg, #e65100, #ff6d00)',
-        '悬疑': 'linear-gradient(135deg, #311b92, #512da8)',
-        '惊悚': 'linear-gradient(135deg, #4a148c, #6a1b9a)',
-        '冒险': 'linear-gradient(135deg, #1b5e20, #2e7d32)',
-        '奇幻': 'linear-gradient(135deg, #006064, #00838f)',
-        '爱情': 'linear-gradient(135deg, #ad1457, #c2185b)',
-        '犯罪': 'linear-gradient(135deg, #263238, #37474f)',
-        '其他': 'linear-gradient(135deg, #37474f, #455a64)'
+        '科幻': 'linear-gradient(135deg, #0d1b2a, #1b0d2a)',
+        '动作': 'linear-gradient(135deg, #2a0d0d, #3a1010)',
+        '动画': 'linear-gradient(135deg, #1a0d1a, #2a1030)',
+        '剧情': 'linear-gradient(135deg, #0a1628, #0d1b33)',
+        '喜剧': 'linear-gradient(135deg, #2a1a0a, #331d0a)',
+        '悬疑': 'linear-gradient(135deg, #1a0d2a, #220d33)',
+        '惊悚': 'linear-gradient(135deg, #200a1a, #2a0d22)',
+        '冒险': 'linear-gradient(135deg, #0a1a0d, #0d2210)',
+        '奇幻': 'linear-gradient(135deg, #0a1a1a, #0d2022)',
+        '爱情': 'linear-gradient(135deg, #2a0a1a, #331020)',
+        '犯罪': 'linear-gradient(135deg, #18181a, #202020)',
+        '其他': 'linear-gradient(135deg, #14141a, #1a1a22)'
     };
     const genre = (genres && genres[0]) || '其他';
     return colors[genre] || colors['其他'];
+}
+
+function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[char]));
 }
 
 // ========== 用户菜单 ==========
@@ -632,21 +519,28 @@ function initMobileMenu() {
     });
 }
 
-// ========== 页面转场动画 ==========
-function initPageTransitions() {
-    document.body.classList.add('page-loaded');
+function initLoginRequiredLinks() {
+    document.querySelectorAll('.requires-login').forEach(link => {
+        link.addEventListener('click', (event) => {
+            event.preventDefault();
+            Toast.warning('请先选择用户登录');
+        });
+    });
 }
 
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
+    // Cursor-aware hero glow
+    initHeroGlow();
+
     // 初始化用户菜单
     initUserMenu();
 
     // 初始化移动端菜单
     initMobileMenu();
 
-    // 初始化页面转场
-    initPageTransitions();
+    // 初始化未登录入口提示
+    initLoginRequiredLinks();
 
     // 初始化星级评分
     document.querySelectorAll('.star-rating-input').forEach(container => {
@@ -674,45 +568,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 绑定推荐卡片点击事件
-    document.querySelectorAll('.rec-item').forEach(card => {
-        card.addEventListener('click', () => {
-            const movieId = parseInt(card.dataset.movieId);
-            const movie = moviesData.find(m => m.movie_id === movieId);
-            if (movie && window.movieModal) {
-                window.movieModal.open(movie);
-            }
-        });
-    });
-
-    // 表单提交 Toast 提示
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', (e) => {
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn && !submitBtn.classList.contains('no-toast')) {
-                setTimeout(() => {
-                    Toast.success('提交成功！');
-                }, 100);
-            }
-        });
-    });
-
-    // 换一批按钮
-    document.querySelectorAll('.refresh-recs').forEach(btn => {
-        btn.addEventListener('click', async function() {
-            if (this.classList.contains('loading')) return;
-            this.classList.add('loading');
-            this.innerHTML = '<span class="spin">↻</span> 加载中...';
-
-            // 模拟刷新
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            this.classList.remove('loading');
-            this.innerHTML = '<span>↻</span> 换一批';
-            Toast.info('已为你换一批新推荐！');
-        });
-    });
-
     // 登录欢迎提示
     const welcomeBanner = document.querySelector('.welcome-banner');
     if (welcomeBanner) {
@@ -721,6 +576,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 800);
     }
 });
+
+// ========== 放映机光束 — Cursor-aware hero glow ==========
+function initHeroGlow() {
+    const hero = document.getElementById('heroGlow');
+    if (!hero) return;
+    const glow = document.createElement('div');
+    glow.className = 'hero-cursor-glow';
+    hero.appendChild(glow);
+    hero.addEventListener('mousemove', (e) => {
+        const rect = hero.getBoundingClientRect();
+        hero.style.setProperty('--mouse-x', ((e.clientX - rect.left) / rect.width * 100).toFixed(1) + '%');
+        hero.style.setProperty('--mouse-y', ((e.clientY - rect.top) / rect.height * 100).toFixed(1) + '%');
+    });
+}
 
 // ========== Flash 消息处理 ==========
 window.showToast = function(message, type = 'info') {

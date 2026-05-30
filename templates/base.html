@@ -1,44 +1,34 @@
+{% from "icons.html" import icon with context %}
 <!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
     <title>{% block title %}电影推荐系统{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var loginRequiredLinks = document.querySelectorAll('.nav-link[href="#"], .mobile-nav-link[href="#"]');
-    loginRequiredLinks.forEach(function(link) {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            alert('请先登录');
-        });
-    });
-});
-</script>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <span class="nav-brand">
-                <span class="brand-icon">🎬</span>
+            <a href="{{ url_for('index') }}" class="nav-brand">
+                {{ icon('film', 24) }}
                 <span class="brand-text">电影推荐</span>
-            </span>
+            </a>
 
             <div class="nav-links">
                 <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
-                    🏠 首页
+                    {{ icon('home', 18) }} 首页
                 </a>
                 <a href="{{ url_for('movies') }}" class="nav-link {% if request.endpoint == 'movies' %}active{% endif %}">
-                    🔍 探索电影
+                    {{ icon('search', 18) }} 探索电影
                 </a>
-                <a href="{{ url_for('recommend', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="nav-link {% if request.endpoint == 'recommend' %}active{% endif %}">
-                    🎯 我的推荐
+                <a href="{{ url_for('recommend', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="nav-link {% if not session.get('user_id') %}requires-login{% endif %} {% if request.endpoint == 'recommend' %}active{% endif %}">
+                    {{ icon('target', 18) }} 我的推荐
                 </a>
-                <a href="{{ url_for('charts', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="nav-link {% if request.endpoint == 'charts' %}active{% endif %}">
-                    📊 我的图表
+                <a href="{{ url_for('charts', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="nav-link {% if not session.get('user_id') %}requires-login{% endif %} {% if request.endpoint == 'charts' %}active{% endif %}">
+                    {{ icon('chart', 18) }} 我的图表
                 </a>
             </div>
 
@@ -48,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button class="user-menu-trigger" id="userMenuTrigger">
                         <span class="user-avatar">{{ user_name[0] if user_name else 'U' }}</span>
                         <span class="user-name">{{ user_name or '用户' }}</span>
-                        <span class="user-arrow">▼</span>
+                        <span class="user-arrow">{{ icon('arrow-down', 14) }}</span>
                     </button>
                     <div class="user-dropdown" id="userDropdown">
                         <div class="dropdown-header">
@@ -60,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="dropdown-divider"></div>
                         <a href="{{ url_for('logout') }}" class="dropdown-item logout">
-                            <span>🚪</span> 退出登录
+                            {{ icon('logout', 18) }} 退出登录
                         </a>
                     </div>
                 </div>
@@ -76,12 +66,12 @@ document.addEventListener('DOMContentLoaded', function() {
     </nav>
 
     <div class="mobile-nav" id="mobileNav">
-        <a href="{{ url_for('index') }}" class="mobile-nav-link">🏠 首页</a>
-        <a href="{{ url_for('movies') }}" class="mobile-nav-link">🔍 探索电影</a>
-        <a href="{{ url_for('recommend', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="mobile-nav-link">🎯 我的推荐</a>
-        <a href="{{ url_for('charts', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="mobile-nav-link">📊 我的图表</a>
+        <a href="{{ url_for('index') }}" class="mobile-nav-link">{{ icon('home', 18) }} 首页</a>
+        <a href="{{ url_for('movies') }}" class="mobile-nav-link">{{ icon('search', 18) }} 探索电影</a>
+        <a href="{{ url_for('recommend', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="mobile-nav-link {% if not session.get('user_id') %}requires-login{% endif %}">{{ icon('target', 18) }} 我的推荐</a>
+        <a href="{{ url_for('charts', user_id=session['user_id']) if session.get('user_id') else '#' }}" class="mobile-nav-link {% if not session.get('user_id') %}requires-login{% endif %}">{{ icon('chart', 18) }} 我的图表</a>
         {% if session.get('user_id') %}
-        <a href="{{ url_for('logout') }}" class="mobile-nav-link logout">🚪 退出</a>
+        <a href="{{ url_for('logout') }}" class="mobile-nav-link logout">{{ icon('logout', 18) }} 退出</a>
         {% endif %}
     </div>
 

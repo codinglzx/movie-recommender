@@ -1,7 +1,8 @@
+{% from "icons.html" import icon with context %}
 {% extends "base.html" %}
 {% block title %}电影列表{% endblock %}
 {% block content %}
-<div class="hero" style="padding: 40px 50px;">
+<div class="hero hero-compact">
     <div class="hero-content">
         <h1>电影库</h1>
         <p>浏览所有电影，发现你喜欢的作品。点击卡片查看详情。</p>
@@ -10,23 +11,15 @@
 
 <div class="search-filter-bar">
     <div class="search-box">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">{{ icon('search', 18) }}</span>
         <input type="text" id="movieSearch" placeholder="搜索电影、类型或简介...">
     </div>
     <div class="filter-group">
         <label>类型</label>
         <div class="genre-filters" id="genreFilters">
-            <button class="genre-filter-btn" data-genre="科幻">科幻</button>
-            <button class="genre-filter-btn" data-genre="动作">动作</button>
-            <button class="genre-filter-btn" data-genre="动画">动画</button>
-            <button class="genre-filter-btn" data-genre="剧情">剧情</button>
-            <button class="genre-filter-btn" data-genre="喜剧">喜剧</button>
-            <button class="genre-filter-btn" data-genre="悬疑">悬疑</button>
-            <button class="genre-filter-btn" data-genre="惊悚">惊悚</button>
-            <button class="genre-filter-btn" data-genre="冒险">冒险</button>
-            <button class="genre-filter-btn" data-genre="奇幻">奇幻</button>
-            <button class="genre-filter-btn" data-genre="爱情">爱情</button>
-            <button class="genre-filter-btn" data-genre="犯罪">犯罪</button>
+            {% for genre in all_genres %}
+            <button class="genre-filter-btn" data-genre="{{ genre }}">{{ genre }}</button>
+            {% endfor %}
         </div>
     </div>
     <div class="filter-group">
@@ -44,9 +37,16 @@
 <div class="movie-grid" id="movieGrid">
     {% for movie in movies %}
     <div class="movie-card" data-movie-id="{{ movie.movie_id }}">
-        <div class="movie-poster" style="background-image: url('{{ url_for('serve_poster', filename=movie.movie_id ~ '.jpg') }}')" onerror="this.style.backgroundImage='none'; this.classList.add('movie-poster-placeholder'); this.dataset.genre='{{ movie.genres[0] if movie.genres else '其他' }}'; this.innerHTML='<span>{{ movie.title[0] }}</span><div class=\'movie-poster-overlay\'><div class=\'movie-rating-badge\'>⭐ {{ movie.vote_average or 'N/A' }}</div></div>'">
+        {% set has_poster = poster_exists(movie.movie_id) %}
+        <div class="movie-poster {% if not has_poster %}movie-poster-placeholder{% endif %}"
+             {% if has_poster %}
+             style="background-image: url('{{ url_for('serve_poster', filename=movie.movie_id ~ '.jpg') }}')"
+             {% else %}
+             data-genre="{{ movie.genres[0] if movie.genres else '其他' }}"
+             {% endif %}>
+            {% if not has_poster %}<span>{{ movie.title[0] }}</span>{% endif %}
             <div class="movie-poster-overlay">
-                <div class="movie-rating-badge">⭐ {{ movie.vote_average }}</div>
+                <div class="movie-rating-badge">{{ icon('star', 11) }} {{ movie.vote_average }}</div>
                 <div class="movie-genre-tags">
                     {% for genre in movie.genres[:2] %}
                     <span class="movie-genre-tag">{{ genre }}</span>
@@ -58,7 +58,7 @@
         <div class="movie-meta">{{ movie.release_year }}</div>
         <div class="movie-meta">{{ movie.genre_text() }}</div>
         <div style="margin-top: 10px;">
-            <span class="rating">⭐ {{ movie.vote_average if movie.vote_average else 'N/A' }}</span>
+            <span class="rating">{{ icon('star', 10) }} {{ movie.vote_average if movie.vote_average else 'N/A' }}</span>
         </div>
         <div class="rating-desc">
             {% if movie.overview %}
@@ -70,7 +70,7 @@
 </div>
 {% else %}
 <div class="empty-state">
-    <div class="icon">🎥</div>
+    <div class="icon">{{ icon('film', 48) }}</div>
     <p>暂无电影，请先 <a href="{{ url_for('init_route') }}">初始化数据</a>。</p>
 </div>
 {% endif %}
@@ -87,7 +87,7 @@ window.__MOVIES_DATA__ = [
         genres: {{ movie.genres|tojson }},
         vote_average: {{ movie.vote_average or 'null' }},
         popularity: {{ movie.popularity or 'null' }},
-        poster_path: {{ url_for('serve_poster', filename=movie.movie_id ~ '.jpg')|tojson }}
+        poster_path: {{ (url_for('serve_poster', filename=movie.movie_id ~ '.jpg') if poster_exists(movie.movie_id) else none)|tojson }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];
