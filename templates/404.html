@@ -1,0 +1,14 @@
+{% from "icons.html" import icon with context %}
+{% extends "base.html" %}
+{% block title %}页面未找到{% endblock %}
+{% block content %}
+<div class="empty-state" style="padding: 100px 24px;">
+    <div class="icon" style="background: rgba(244, 67, 54, 0.08); border-color: rgba(244, 67, 54, 0.2);">
+        {{ icon('warning', 48) }}
+    </div>
+    <h1 style="font-size: 4rem; margin-bottom: 12px; color: #fff; font-family: 'Playfair Display', Georgia, serif;">404</h1>
+    <h2 style="font-size: 1.2rem; margin-bottom: 12px; color: var(--color-text); text-transform: none; letter-spacing: 0; border: 0; padding: 0;">页面走丢了</h2>
+    <p style="max-width: 420px; margin: 0 auto 24px;">你要找的页面可能已被搬走、删掉，或者从来就不存在。</p>
+    <a href="{{ url_for('index') }}" class="btn">{{ icon('home', 16) }} 回到首页</a>
+</div>
+{% endblock %}

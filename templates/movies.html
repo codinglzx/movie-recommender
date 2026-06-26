@@ -1,0 +1,74 @@
+{% from "icons.html" import icon with context %}
+{% from "_movie_card.html" import movie_card with context %}
+{% extends "base.html" %}
+{% block title %}电影列表{% endblock %}
+{% block content %}
+<div class="hero hero-compact">
+    <div class="hero-content">
+        <h1>电影库</h1>
+        <p>浏览所有电影，发现你喜欢的作品。点击卡片查看详情。</p>
+    </div>
+</div>
+
+<div class="search-filter-bar">
+    <div class="search-box">
+        <span class="search-icon">{{ icon('search', 18) }}</span>
+        <input type="text" id="movieSearch" placeholder="搜索电影、类型或简介..." autocomplete="off" spellcheck="false">
+    </div>
+    <div class="filter-group">
+        <label>类型</label>
+        <div class="genre-filters" id="genreFilters">
+            {% for genre in all_genres %}
+            <button class="genre-filter-btn" data-genre="{{ genre }}">{{ genre }}</button>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="filter-group">
+        <label>年份</label>
+        <select name="year" id="yearFilter">
+            <option value="">全部年份</option>
+            {% for year in years %}
+            <option value="{{ year }}">{{ year }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div id="resultCounter" class="result-counter" aria-live="polite"></div>
+
+{% if movies %}
+<div class="movie-grid stagger" id="movieGrid">
+    {% for movie in movies %}
+    {{ movie_card(movie) }}
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="icon">{{ icon('film', 48) }}</div>
+    <p>暂无电影，请先</p>
+    <form method="post" action="{{ url_for('init_route') }}" style="margin-top: 12px;">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token_value }}">
+        <button type="submit" class="btn">初始化数据</button>
+    </form>
+</div>
+{% endif %}
+
+<script>
+window.__MOVIES_DATA__ = [
+    {% for movie in movies %}
+    {
+        movie_id: {{ movie.movie_id }},
+        title: {{ movie.title|tojson }},
+        overview: {{ movie.overview|tojson }},
+        release_year: {{ movie.release_year or 'null' }},
+        genres: {{ movie.genres|tojson }},
+        vote_average: {{ movie.vote_average or 'null' }},
+        popularity: {{ movie.popularity or 'null' }},
+        poster_path: {{ (url_for('serve_poster', filename=movie.movie_id ~ '.jpg') if poster_exists(movie.movie_id) else none)|tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+window.__CURRENT_USER_ID__ = {{ session.get('user_id', 'null') }};
+window.__USER_RATINGS__ = {{ user_ratings | tojson }};
+</script>
+{% endblock %}

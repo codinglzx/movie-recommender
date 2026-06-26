@@ -1,0 +1,62 @@
+{% from "icons.html" import icon with context %}
+{% extends "base.html" %}
+{% block title %}电影推荐系统 - 首页{% endblock %}
+{% block content %}
+<div class="hero" id="heroGlow">
+    <div class="hero-content">
+        <h1>发现你的专属电影</h1>
+        <p>基于协同过滤与类型偏好，为你推荐最感兴趣的电影作品。</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('movies') }}" class="btn btn-secondary">探索电影</a>
+            {% if session.get('user_id') %}
+            <a href="{{ url_for('recommend', user_id=session['user_id']) }}" class="btn btn-secondary">我的推荐</a>
+            <a href="{{ url_for('charts', user_id=session['user_id']) }}" class="btn btn-secondary">我的图表</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="bento-grid">
+    <div class="bento-card bento-stats">
+        <div class="stats-card">
+            <div class="stats-icon">{{ icon('film', 28) }}</div>
+            <span class="stats-num count-up" data-target="{{ movie_count }}">0</span>
+            <span class="stats-label">电影收藏</span>
+        </div>
+    </div>
+    <div class="bento-card bento-stats">
+        <div class="stats-card">
+            <div class="stats-icon">{{ icon('star', 28) }}</div>
+            <span class="stats-num count-up" data-target="{{ rating_count or 0 }}">0</span>
+            <span class="stats-label">评分记录</span>
+        </div>
+    </div>
+
+    {% if not session.get('user_id') %}
+    <div class="bento-card bento-users">
+        <div class="card-title">{{ icon('user', 20) }} 选择用户登录</div>
+        <div class="user-grid">
+            {% for u in users %}
+            <form method="post" action="{{ url_for('login', user_id=u.user_id) }}" class="user-card-form">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token_value }}">
+                <button type="submit" class="user-card">
+                    <div class="user-card-avatar">{{ u.name[0] }}</div>
+                    <div class="user-card-name">{{ u.name }}</div>
+                    <div class="user-card-subtitle">点击登录</div>
+                </button>
+            </form>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bento-card bento-add-user">
+        <div class="card-title">{{ icon('sparkle', 20) }} 添加新用户</div>
+        <form method="post" action="{{ url_for('add_user') }}" class="add-user-form" novalidate>
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token_value }}">
+            <input type="text" name="name" placeholder="输入用户名（1-32 字符）" required maxlength="32" autocomplete="off">
+            <button type="submit" class="btn">添加用户</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

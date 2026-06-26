@@ -1,0 +1,55 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+
+# Flask instance folder
+instance/
+
+# Environment variables
+.env
+.flaskenv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Database (generated)
+data/*.db
+data/*.db-*
+
+# Downloaded posters (cached)
+data/posters/
+
+# Auto-generated matplotlib charts (regenerated on demand)
+static/images/*.png
+static/images/*.jpg
+static/images/*.jpeg
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Logs
+*.log

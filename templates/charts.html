@@ -1,0 +1,96 @@
+{% from "icons.html" import icon with context %}
+{% extends "base.html" %}
+{% block title %}{{ user_name }} 的图表{% endblock %}
+{% block content %}
+<div class="page-content">
+<h1>数据图表 - {{ user_name }}</h1>
+<p class="page-desc">评分分布、类型偏好和评分矩阵分析。</p>
+
+<div class="actions">
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">{{ icon('home', 16) }} 返回首页</a>
+</div>
+
+<div class="charts">
+    <div class="chart-card">
+        <h2>{{ icon('chart', 16) }} 用户评分分布</h2>
+        <img src="{{ url_for('static', filename='images/' ~ rating_chart_filename) }}" alt="评分分布">
+    </div>
+    <div class="chart-card">
+        <h2>{{ icon('target', 16) }} 用户类型偏好</h2>
+        <img src="{{ url_for('static', filename='images/' ~ genre_chart_filename) }}" alt="类型偏好">
+    </div>
+</div>
+
+<div class="matrix-panel">
+    <h2>numpy 评分矩阵分析</h2>
+    <div class="matrix-stats">
+        <div class="matrix-stat">
+            <span class="matrix-value">{{ matrix_summary.user_count }} x {{ matrix_summary.movie_count }}</span>
+            <span class="matrix-label">矩阵维度</span>
+        </div>
+        <div class="matrix-stat">
+            <span class="matrix-value">{{ matrix_summary.rated_count }}</span>
+            <span class="matrix-label">评分单元</span>
+        </div>
+        <div class="matrix-stat">
+            <span class="matrix-value">{{ matrix_summary.density_percent }}%</span>
+            <span class="matrix-label">矩阵密度</span>
+        </div>
+        <div class="matrix-stat">
+            <span class="matrix-value">{{ matrix_summary.global_average }}</span>
+            <span class="matrix-label">全局均分</span>
+        </div>
+        <div class="matrix-stat">
+            <span class="matrix-value{% if matrix_summary.current_user_average is none %} is-empty{% endif %}">
+                {{ matrix_summary.current_user_average if matrix_summary.current_user_average is not none else '—' }}
+            </span>
+            <span class="matrix-label">我的均分</span>
+        </div>
+        <div class="matrix-stat">
+            <span class="matrix-value{% if not matrix_summary.current_user_count %} is-empty{% endif %}">
+                {{ matrix_summary.current_user_count if matrix_summary.current_user_count else '—' }}
+            </span>
+            <span class="matrix-label">我的评分数</span>
+        </div>
+    </div>
+
+    <div class="analysis-grid">
+        <div class="analysis-card">
+            <h3>电影平均评分 Top 5</h3>
+            <table class="analysis-table">
+                <thead>
+                    <tr><th>电影</th><th>均分</th><th>次数</th></tr>
+                </thead>
+                <tbody>
+                    {% for movie in matrix_summary.top_movies %}
+                    <tr>
+                        <td>{{ movie.title }}</td>
+                        <td>{{ movie.average }}</td>
+                        <td>{{ movie.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="analysis-card">
+            <h3>余弦相似用户</h3>
+            <table class="analysis-table">
+                <thead>
+                    <tr><th>用户</th><th>相似度</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in matrix_summary.similar_users %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.similarity }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="2" style="text-align:center; color: var(--color-text-muted); padding: 24px 12px;">评分后才能发现相似用户哦</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{# 电影卡片宏 — 在 movies.html 和 recommend.html 共用 #}
+{% from "icons.html" import icon with context %}
+
+{% macro movie_card(movie, score=None, score_color='#e94560', score_label='推荐指数', overview_max=100) -%}
+{% set has_poster = poster_exists(movie.movie_id) %}
+<article class="movie-card" data-movie-id="{{ movie.movie_id }}"
+         tabindex="0" role="button" aria-label="查看 {{ movie.title }} 详情">
+    <div class="movie-poster {% if not has_poster %}movie-poster-placeholder{% endif %}"
+         {% if not has_poster %}data-genre="{{ movie.genres[0] if movie.genres else '其他' }}"{% endif %}>
+        {% if has_poster %}
+        <img class="movie-poster-img"
+             src="{{ url_for('serve_poster', filename=movie.movie_id ~ '.jpg') }}"
+             alt="{{ movie.title }} 海报"
+             loading="lazy" decoding="async">
+        {% else %}
+        <span>{{ movie.title[0] }}</span>
+        {% endif %}
+        <div class="movie-poster-overlay">
+            <div class="movie-rating-badge">{{ icon('star', 11) }} {{ movie.vote_average }}</div>
+            <div class="movie-genre-tags">
+                {% for genre in movie.genres[:2] %}
+                <span class="movie-genre-tag">{{ genre }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <span class="movie-info-hint" aria-hidden="true">查看详情 →</span>
+    </div>
+    <h3>{{ movie.title }}</h3>
+    <div class="movie-meta">{{ movie.release_year }}</div>
+    <div class="movie-meta">{{ movie.genre_text() }}</div>
+    {% if score is not none %}
+    <div style="margin-top: 10px;">
+        <span class="score" style="color: {{ score_color }}; font-weight: 700;">{{ score_label }}: {{ "%.2f"|format(score) }}</span>
+    </div>
+    {% else %}
+    <div style="margin-top: 10px;">
+        <span class="rating">{{ icon('star', 10) }} {{ movie.vote_average if movie.vote_average else 'N/A' }}</span>
+    </div>
+    {% endif %}
+    <div class="rating-desc">
+        {% if movie.overview %}
+            {% if movie.overview|length > overview_max %}{{ movie.overview[:overview_max] }}...{% else %}{{ movie.overview }}{% endif %}
+        {% else %}暂无简介{% endif %}
+    </div>
+</article>
+{%- endmacro %}
+

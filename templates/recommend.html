@@ -1,0 +1,108 @@
+{% from "icons.html" import icon with context %}
+{% from "_movie_card.html" import movie_card with context %}
+{% extends "base.html" %}
+{% block title %}{{ user_name }} 的推荐{% endblock %}
+{% block content %}
+<div class="welcome-banner">
+    <div class="welcome-text">
+        <h2>欢迎回来，{{ user_name }}！</h2>
+        {% if genre_status.available and cf_status.available %}
+        <p>基于你的评分历史和类型偏好，我们为你准备了以下推荐</p>
+        {% elif not genre_status.available and not cf_status.available %}
+        <p>开始给电影评分，解锁专属于你的个性化推荐</p>
+        {% else %}
+        <p>部分推荐已就绪。给更多电影打分，看看你还有什么口味偏好</p>
+        {% endif %}
+    </div>
+    <div class="welcome-stats">
+        <div class="welcome-stat">
+            <span class="welcome-stat-num">{{ genre_recs|length }}</span>
+            <span class="welcome-stat-label">{{ icon('target', 16) }} 类型推荐</span>
+        </div>
+        <div class="welcome-stat">
+            <span class="welcome-stat-num">{{ cf_recs|length }}</span>
+            <span class="welcome-stat-label">{{ icon('crystal', 16) }} 协同推荐</span>
+        </div>
+    </div>
+</div>
+
+<div class="actions">
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">{{ icon('home', 16) }} 返回首页</a>
+</div>
+
+<h2>{{ icon('target', 18) }} 基于类型偏好</h2>
+{% if genre_status.available %}
+    {% if genre_recs %}
+    <div class="movie-grid stagger">
+        {% for r in genre_recs %}
+        {{ movie_card(r.movie, score=r.score, score_color='#e94560', score_label='推荐指数', overview_max=50) }}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="recommend-prompt">
+        <div class="prompt-icon">{{ icon('target', 32) }}</div>
+        <h3>暂无类型偏好推荐</h3>
+        <p>暂时没有匹配你口味的电影，过段时间再来看看。</p>
+    </div>
+    {% endif %}
+{% else %}
+    <div class="recommend-prompt" data-reason="{{ genre_status.reason }}">
+        <div class="prompt-icon">{{ icon('target', 32) }}</div>
+        <h3>解锁基于类型偏好的推荐</h3>
+        <p>{{ genre_status.message }}</p>
+        {% if genre_status.cta_text %}
+        <a href="{{ genre_status.cta_href }}" class="btn">
+            {{ icon(genre_status.cta_icon, 16) }} {{ genre_status.cta_text }}
+        </a>
+        {% endif %}
+    </div>
+{% endif %}
+
+<h2>{{ icon('crystal', 18) }} 协同过滤推荐</h2>
+{% if cf_status.available %}
+    {% if cf_recs %}
+    <div class="movie-grid stagger">
+        {% for r in cf_recs %}
+        {{ movie_card(r.movie, score=r.score, score_color='#00d4ff', score_label='推荐指数', overview_max=50) }}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="recommend-prompt">
+        <div class="prompt-icon">{{ icon('crystal', 32) }}</div>
+        <h3>暂无协同推荐</h3>
+        <p>暂时没有相似用户喜欢但你没看过的电影，过段时间再来看看。</p>
+    </div>
+    {% endif %}
+{% else %}
+    <div class="recommend-prompt" data-reason="{{ cf_status.reason }}">
+        <div class="prompt-icon">{{ icon('crystal', 32) }}</div>
+        <h3>解锁协同过滤推荐</h3>
+        <p>{{ cf_status.message }}</p>
+        {% if cf_status.cta_text %}
+        <a href="{{ cf_status.cta_href }}" class="btn">
+            {{ icon(cf_status.cta_icon, 16) }} {{ cf_status.cta_text }}
+        </a>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% set recs = genre_recs + cf_recs %}
+<script>
+window.__MOVIES_DATA__ = [
+    {% for r in recs %}
+    {
+        movie_id: {{ r.movie.movie_id }},
+        title: {{ r.movie.title|tojson }},
+        overview: {{ r.movie.overview|tojson }},
+        release_year: {{ r.movie.release_year or 'null' }},
+        genres: {{ r.movie.genres|tojson }},
+        vote_average: {{ r.movie.vote_average or 'null' }},
+        popularity: {{ r.movie.popularity or 'null' }},
+        poster_path: {{ (url_for('serve_poster', filename=r.movie.movie_id ~ '.jpg') if poster_exists(r.movie.movie_id) else none)|tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+window.__CURRENT_USER_ID__ = {{ user_id }};
+window.__USER_RATINGS__ = {{ user_ratings | tojson }};
+</script>
+{% endblock %}
